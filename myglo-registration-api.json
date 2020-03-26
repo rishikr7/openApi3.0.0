@@ -1,0 +1,345 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "API for assigning myGlo device ids to a unique customer.",
+    "version": "1.0.0",
+    "title": "myGlo Device Registration API",
+    "contact": {
+      "email": "DL-MSD-batteam@direkt-gruppe.de"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://t-www.myglo-registrierung.de/api",
+      "description": "Staging server (uses staging database)"
+    },
+    {
+      "url": "https://www.myglo-registrierung.de/api",
+      "description": "Production server (uses live database)"
+    }
+  ],
+  "paths": {
+    "/auth": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Provides a JSON web token",
+        "description": "The request for this endpoint must be made as HTTP Basic Authentication request, containing a client id and a client secret provided by MSD. The success response contains a JWT that needs to be used as bearer token in the Authorization header for the requests for all other endpoints. The default lifetime for the JWT is 1200 seconds.",
+        "security": [
+          {
+            "basicAuth": [
+
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string",
+                      "description": "A valid API access token",
+                      "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3QiLCJzdWIiOiJ0ZXN0IiwiZXhwIjoxNTgyNjMxNjUyLCJuYmYiOjE1ODI2MzA0NTJ9.m9DduqeOUV_BTQguqzCPuAdgeERPBzGAmil6bu07gPs"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "description": "The type of token provided",
+                      "example": "bearer"
+                    },
+                    "expires_in": {
+                      "type": "integer",
+                      "description": "Token lifetime in seconds",
+                      "example": 1200
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Invalid client credentials"
+          },
+          "422": {
+            "description": "Client credentials missing"
+          }
+        }
+      }
+    },
+    "/test": {
+      "get": {
+        "tags": [
+          "JWT validity test"
+        ],
+        "summary": "Only for developement purposes, provides feedback on whether a used JWT is valid",
+        "security": [
+          {
+            "bearerAuth": [
+
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "A simple string indicating a successful request",
+                  "example": "success"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised request"
+          }
+        }
+      }
+    },
+    "/device": {
+      "post": {
+        "tags": [
+          "Set device registration"
+        ],
+        "summary": "sets a device registration for a customer",
+        "security": [
+          {
+            "bearerAuth": [
+
+            ]
+          }
+        ],
+        "requestBody": {
+          "description": "The body of data for the device registration",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "device": {
+                    "$ref": "#/components/schemas/device"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "description": "The response HTTP status code",
+                      "example": 200
+                    },
+                    "device": {
+                      "$ref": "#/components/schemas/device"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "description": "The response HTTP status code",
+                      "example": 400
+                    },
+                    "errorMessage": {
+                      "type": "string",
+                      "description": "A description of the error that occurred",
+                      "example": "resource already assigned, association not created"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised request"
+          }
+        }
+      }
+    },
+    "/device/{id}": {
+      "get": {
+        "tags": [
+          "Get device"
+        ],
+        "summary": "Gets the current assignment status for a device id",
+        "security": [
+          {
+            "bearerAuth": [
+
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "A valid device id",
+            "schema": {
+              "type": "string",
+              "example": 123456
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "A JSON object. Note that one or both properties can be NULL, e.g., if an invalid device id has been passed as parameter",
+                  "properties": {
+                    "deviceId": {
+                      "type": "string",
+                      "nullable": true,
+                      "example": 123456
+                    },
+                    "assigned": {
+                      "type": "boolean",
+                      "nullable": true,
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised request"
+          }
+        }
+      }
+    },
+    "/device/customer/{id}": {
+      "get": {
+        "tags": [
+          "Get devices by customer"
+        ],
+        "summary": "Gets all device ids assigned to a given customer",
+        "security": [
+          {
+            "bearerAuth": [
+
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "A valid salesforce id for the customer",
+            "schema": {
+              "type": "string",
+              "example": 345678
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "devices": {
+                      "type": "array",
+                      "minItems": 0,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string",
+                            "example": 123456
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised request"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "device": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "The device id",
+            "example": 123456
+          },
+          "email": {
+            "type": "string",
+            "description": "The customer email address",
+            "example": "mbrook@wundermancommerce.com"
+          },
+          "magentoId": {
+            "type": "string",
+            "description": "The customer magento id",
+            "example": 123456
+          },
+          "salesforceId": {
+            "type": "string",
+            "description": "The customer salesforce id",
+            "example": 234567
+          },
+          "azureId": {
+            "type": "string",
+            "description": "The customer azure id",
+            "example": 345678
+          }
+        },
+        "required": [
+          "deviceId",
+          "email"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
